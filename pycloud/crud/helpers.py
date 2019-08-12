@@ -10,10 +10,10 @@ from .user import get_user, get_user_by_email
 
 
 async def check_free_username_and_email(
-    db: Database, username: Optional[str] = None, email: Optional[EmailStr] = None
+    username: Optional[str] = None, email: Optional[EmailStr] = None
 ):
     if username:
-        user_by_username = await get_user(db, username)
+        user_by_username = await get_user(username)
 
         if user_by_username:
             raise HTTPException(
@@ -22,7 +22,7 @@ async def check_free_username_and_email(
             )
 
     if email:
-        user_by_email = await get_user_by_email(db, email)
+        user_by_email = await get_user_by_email(email)
 
         if user_by_email:
             raise HTTPException(

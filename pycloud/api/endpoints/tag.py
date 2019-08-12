@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 
 from pycloud.crud.tag import fetch_all_tags
 from pycloud.db.database import DBClient, get_db_client
-from pycloud.models.tag import TagsList
+from pycloud.models.schemas.tag import TagsList
 
 router = APIRouter()
 

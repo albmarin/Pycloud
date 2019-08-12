@@ -3,7 +3,7 @@ from typing import List
 
 from pymongo.database import Database
 
-from pycloud.models.tag import TagInDB
+from pycloud.models.schemas.tag import TagInDB
 
 
 async def fetch_all_tags(db: Database) -> List[TagInDB]:

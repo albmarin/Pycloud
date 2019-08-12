@@ -9,17 +9,15 @@ from pycloud.core.jwt import create_access_token
 from pycloud.crud.helpers import check_free_username_and_email
 from pycloud.crud.user import create_user, get_user_by_email
 from pycloud.db.database import DBClient, get_db_client
-from pycloud.models.user import User, UserInCreate, UserInLogin, UserInResponse
+from pycloud.models.schemas.user import User, UserInCreate, UserInLogin, UserInResponse
 from pycloud.settings import Config
 
 router = APIRouter()
 
 
 @router.post("/users/login", response_model=UserInResponse, tags=["authentication"])
-async def login(
-    user: UserInLogin = Body(..., embed=True), client: DBClient = Depends(get_db_client)
-):
-    db_user = await get_user_by_email(client.conn.pycloud, user.email)
+async def login(user: UserInLogin = Body(..., embed=True)):
+    db_user = await get_user_by_email(user.email)
 
     if not db_user or not db_user.check_password(user.password):
         raise HTTPException(
@@ -40,16 +38,14 @@ async def login(
     tags=["authentication"],
     status_code=HTTP_201_CREATED,
 )
-async def register(
-    user: UserInCreate = Body(..., embed=True),
-    client: DBClient = Depends(get_db_client),
-):
-    await check_free_username_and_email(client.conn.pycloud, user.username, user.email)
+async def register(user: UserInCreate = Body(..., embed=True)):
+    await check_free_username_and_email(user.username, user.email)
 
-    db_user = await create_user(client.conn.pycloud, user)
+    db_user = await create_user(user)
     access_token_expires = timedelta(minutes=Config.ACCESS_TOKEN_EXPIRE_MINUTES)
     token = create_access_token(
         data={"username": db_user.username}, expires_delta=access_token_expires
     )
 
+    print(db_user)
     return UserInResponse(user=User(**db_user.dict(), token=token))

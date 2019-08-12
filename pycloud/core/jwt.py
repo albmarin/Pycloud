@@ -10,8 +10,8 @@ from starlette.status import HTTP_403_FORBIDDEN, HTTP_404_NOT_FOUND
 
 from pycloud.crud.user import get_user
 from pycloud.db.database import DBClient, get_db_client
-from pycloud.models.token import TokenPayload
-from pycloud.models.user import User
+from pycloud.models.schemas.token import TokenPayload
+from pycloud.models.schemas.user import User
 
 from pycloud.settings import Config
 
