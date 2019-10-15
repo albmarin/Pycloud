@@ -1,0 +1,11 @@
+version: "3"
+services:
+    api:
+        build: .
+        image: pycloud_api:latest
+        ports:
+            - 8000:80
+        env_file:
+            - .env
+        environment:
+            - APP_MODULE=pycloud_api.main:app

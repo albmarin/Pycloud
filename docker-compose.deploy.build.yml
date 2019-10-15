@@ -1,0 +1,15 @@
+version: '3.3'
+services:
+  backend:
+    env_file:
+      - env-backend.env.prod
+    build:
+      context: ./backend
+      args:
+        BACKEND_ENV: ${BACKEND_ENV-production}
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        FRONTEND_ENV: ${FRONTEND_ENV-production}
