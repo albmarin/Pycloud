@@ -1,0 +1,15 @@
+version: '3.3'
+services:
+  backend:
+    env_file:
+      - env-backend.env
+    build:
+      context: ./backend
+      args:
+        BACKEND_ENV: development
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        FRONTEND_ENV: development

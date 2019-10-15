@@ -7,32 +7,11 @@ exclude = '''
   | \.hg
   | \.mypy_cache
   | \.tox
-  | \venv
   | \.venv
-  | \.venv36
+  | venv
   | _build
   | buck-out
   | build
   | dist
 )/
 '''
-
-[pycalver]
-current_version = "19.08.0"
-version_pattern = "{yy}.{month}.{PATCH}"
-commit = true
-tag = true
-push = true
-
-[pycalver.file_patterns]
-"pyproject.toml" = [
-    'current_version = "{version}"',
-]
-"setup.py" = [
-    "{version}",
-    "{yy}.{month}.{PATCH}",
-]
-
-"scs_cli/__init__.py" = [
-    '__version__ = "{yy}.{month}.{PATCH}"',
-]

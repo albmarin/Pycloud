@@ -1,0 +1,38 @@
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \venv
+  | \.venv
+  | \.venv36
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[pycalver]
+current_version = "19.08.0"
+version_pattern = "{yy}.{month}.{PATCH}"
+commit = true
+tag = true
+push = true
+
+[pycalver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+"setup.py" = [
+    "{version}",
+    "{yy}.{month}.{PATCH}",
+]
+
+"pycloud_api/__init__.py" = [
+    '__version__ = "{yy}.{month}.{PATCH}"',
+]
