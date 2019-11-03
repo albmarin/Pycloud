@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from collections.abc import Iterable
-from loguru import logger
+
 from fastapi.openapi.constants import REF_PREFIX
 from fastapi.openapi.utils import (
     validation_error_definition,
     validation_error_response_definition,
 )
+from loguru import logger
+from marshmallow.exceptions import ValidationError
 from starlette.exceptions import HTTPException
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -24,6 +26,14 @@ async def default_error_handler(request: Request, exc: Exception):
 
 async def auth_error_handler(request: Request, exc: AuthError) -> JSONResponse:
     return JSONResponse({"errors": [exc.error]}, status_code=exc.status_code)
+
+
+async def validation_error_handler(
+    request: Request, exc: ValidationError
+) -> JSONResponse:
+    return JSONResponse(
+        {"errors": [exc.messages]}, status_code=HTTP_422_UNPROCESSABLE_ENTITY
+    )
 
 
 async def http_error_handler(request: Request, exc: HTTPException) -> JSONResponse:
