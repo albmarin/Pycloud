@@ -8,6 +8,7 @@ BACKEND_ENV=${BACKEND_ENV-production} \
 FRONTEND_ENV=${FRONTEND_ENV-production} \
 docker-compose \
 -f docker-compose.deploy.build.yml \
+-f docker-compose.deploy.env.yml \
 -f docker-compose.deploy.images.yml \
 config > docker-stack.yml
 
