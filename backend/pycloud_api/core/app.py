@@ -1,22 +1,29 @@
 # -*- coding: utf-8 -*-
 import sentry_sdk
-from fastapi import FastAPI as _FastAPI
-from starlette.exceptions import HTTPException
-from starlette.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from authlib.integrations.starlette_client import OAuth
+from fastapi import FastAPI as _FastAPI
+from marshmallow.exceptions import ValidationError
 from pycloud_api.api import router as api_router
 from pycloud_api.core.errors import (
     AuthError,
     default_error_handler,
     auth_error_handler,
+    validation_error_handler,
     http_422_error_handler,
     http_error_handler,
 )
 from pycloud_api.db.db_utils import close_mongo_connection, connect_to_mongo
+from pycloud_api.models.mongo import ensure_indexes
 from pycloud_api.settings import Config
+from starlette.exceptions import HTTPException
+from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
+
+
+async def startup_event():
+    await connect_to_mongo()
+    await ensure_indexes()
 
 
 class FastAPI(_FastAPI):
@@ -37,21 +44,19 @@ class FastAPI(_FastAPI):
 
         self.add_middleware(
             CORSMiddleware,
-            allow_origins=getattr(Config, "ALLOWED_HOSTS", ["*"]),
+            allow_origins=getattr(Config, "ALLOWED_HOSTS"),
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
         )
         self.add_middleware(SessionMiddleware, secret_key=self.config.SECRET_KEY)
 
-        if self.config.ENV == "production":
-            self.add_middleware(HTTPSRedirectMiddleware)
-
         self.add_event_handler("startup", connect_to_mongo)
         self.add_event_handler("shutdown", close_mongo_connection)
 
         self.add_exception_handler(Exception, default_error_handler)
         self.add_exception_handler(AuthError, auth_error_handler)
+        self.add_exception_handler(ValidationError, validation_error_handler)
         self.add_exception_handler(HTTPException, http_error_handler)
         self.add_exception_handler(
             HTTP_422_UNPROCESSABLE_ENTITY, http_422_error_handler

@@ -16,7 +16,3 @@ class Tenant(BaseModel):
 
     class Meta:
         collection = db.tenants
-
-
-# Make sure that unique indexes are created
-Tenant.ensure_indexes()

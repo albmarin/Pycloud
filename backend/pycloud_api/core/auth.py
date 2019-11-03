@@ -10,6 +10,7 @@ from pycloud_api.models.schemas.token import Token
 from pycloud_api.settings import Config
 from .errors import AuthError
 from pycloud_api.models.mongo.base import init_instance
+from pycloud_api.models.mongo import ensure_lazy_indexes
 
 ALGORITHMS = ["RS256"]
 
@@ -112,6 +113,7 @@ async def requires_auth(token: Token = Depends(get_token_auth_header)) -> dict:
             )
 
         await init_instance(payload)
+        await ensure_lazy_indexes()
         return payload
 
     raise AuthError(
