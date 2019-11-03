@@ -1035,10 +1035,10 @@ Temporary Items
 ### Secrets
 *.env*
 !.env
-!docker-compose.*.env.yml
 !env-backend.env.example
 _scrap
 docker-stack.*yml
 
 ### Ignored exceptions
 !scripts
+!docker-compose.*.*.yml

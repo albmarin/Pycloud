@@ -1,66 +1,46 @@
 version: '3.3'
 services:
-  consul-leader:
-    environment:
-      - CONSUL_BIND_INTERFACE=eth0
-      - 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}'
-    deploy:
-      labels:
-        - traefik.frontend.rule=Host:consul.sys.${DOMAIN?Variable DOMAIN not set}
-        - traefik.enable=true
-        - traefik.port=8500
-        - traefik.tags=${TRAEFIK_PUBLIC_TAG}
-        - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
-        # Traefik service that listens to HTTP
-        - traefik.redirectorservice.frontend.entryPoints=http
-        - traefik.redirectorservice.frontend.redirect.entryPoint=https
-        # Traefik service that listens to HTTPS
-        - traefik.webservice.frontend.entryPoints=https
-        - traefik.frontend.auth.basic.users=${USERNAME?Variable USERNAME not set}:${HASHED_PASSWORD?Variable HASHED_PASSWORD not set}
-
-  consul-replica:
-    environment:
-      - CONSUL_BIND_INTERFACE=eth0
-      - 'CONSUL_LOCAL_CONFIG={"leave_on_terminate": true}'
-
   traefik:
     deploy:
       labels:
-        - traefik.frontend.rule=Host:traefik.sys.${DOMAIN?Variable DOMAIN not set}
-        - traefik.enable=true
-        - traefik.port=8080
+        # Dashboard
+        - traefik.http.routers.proxy.rule=Host(`proxy.sys.${DOMAIN?Variable DOMAIN not set}`)
+        - traefik.http.services.proxy.loadbalancer.server.port=80
+        - traefik.http.routers.proxy.service=api@internal
+        - traefik.http.routers.proxy.tls.certresolver=default
+        - traefik.http.routers.proxy.entrypoints=websecure
+        - traefik.http.routers.proxy.middlewares=authtraefik
+        - traefik.http.middlewares.authtraefik.basicauth.users=${USERNAME?Variable USERNAME not set}:${HASHED_PASSWORD?Variable HASHED_PASSWORD not set}
         - traefik.tags=${TRAEFIK_PUBLIC_TAG}
         - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
-        # Traefik service that listens to HTTP
-        - traefik.redirectorservice.frontend.entryPoints=http
-        - traefik.redirectorservice.frontend.redirect.entryPoint=https
-        # Traefik service that listens to HTTPS
-        - traefik.webservice.frontend.entryPoints=https
-        - traefik.frontend.auth.basic.users=${USERNAME?Variable USERNAME not set}:${HASHED_PASSWORD?Variable HASHED_PASSWORD not set}
+        - traefik.enable=true
+
+        # global redirect to https
+        - traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)
+        - traefik.http.routers.http-catchall.entrypoints=web
+        - traefik.http.routers.http-catchall.middlewares=redirect-to-https
+
+        # middleware redirect
+        - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
 
   backend:
     deploy:
       labels:
-        - traefik.frontend.rule=PathPrefix:/api
-        - traefik.enable=true
-        - traefik.port=80
-        - traefik.tags=${TRAEFIK_TAG}
+        - traefik.http.routers.backend.rule=Host(`${DOMAIN?Variable DOMAIN not set}`) && PathPrefix(`/api`)
+        - traefik.http.services.backend.loadbalancer.server.port=80
+        - traefik.http.routers.backend.entrypoints=websecure
+        - traefik.http.routers.backend.tls.certresolver=default
+        - traefik.tags=${TRAEFIK_PUBLIC_TAG}
         - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
-        # Traefik service that listens to HTTP
-        - traefik.redirectorservice.frontend.entryPoints=http
-        - traefik.redirectorservice.frontend.redirect.entryPoint=https
-        # Traefik service that listens to HTTPS
-        - traefik.webservice.frontend.entryPoints=https
+        - traefik.enable=true
+
   frontend:
     deploy:
       labels:
-        - traefik.frontend.rule=PathPrefix:/
-        - traefik.enable=true
-        - traefik.port=80
-        - traefik.tags=${TRAEFIK_TAG}
+        - traefik.http.routers.frontend.rule=Host(`${DOMAIN?Variable DOMAIN not set}`) && PathPrefix(`/`)
+        - traefik.http.services.frontend.loadbalancer.server.port=80
+        - traefik.http.routers.frontend.entrypoints=websecure
+        - traefik.http.routers.frontend.tls.certresolver=default
+        - traefik.tags=${TRAEFIK_PUBLIC_TAG}
         - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK}
-        # Traefik service that listens to HTTP
-        - traefik.redirectorservice.frontend.entryPoints=http
-        - traefik.redirectorservice.frontend.redirect.entryPoint=https
-        # Traefik service that listens to HTTPS
-        - traefik.webservice.frontend.entryPoints=https
+        - traefik.enable=true

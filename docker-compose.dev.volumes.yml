@@ -1,5 +1,5 @@
 version: '3.3'
 services:
-  backend:
-    volumes:
-      - ./backend:/app
+#  backend:
+#    volumes:
+#      - ./backend:/app
