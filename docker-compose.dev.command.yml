@@ -12,4 +12,4 @@ services:
 
   backend:
 #    command: bash -c "while true; do sleep 1; done"  # Infinite loop to keep container live doing nothing
-#    command: bash -c "uvicorn enkefalos_api.main:app --reload --host=0.0.0.0 --port=80"
+#    command: bash -c "uvicorn pycloud_api.main:app --reload --host=0.0.0.0 --port=80"

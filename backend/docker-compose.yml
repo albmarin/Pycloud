@@ -1,11 +1,15 @@
-version: "3"
+version: "3.3"
 services:
-    api:
+    backend:
         build: .
         image: pycloud_api:latest
         ports:
-            - 8000:80
+            - 80:80
         env_file:
             - .env
         environment:
             - APP_MODULE=pycloud_api.main:app
+        volumes:
+            - .:/app
+        command: bash -c "uvicorn pycloud_api.main:app --reload --host=0.0.0.0 --port=80"
+#        command: bash -c "while true; do sleep 1; done"  # Infinite loop to keep container live doing nothing
