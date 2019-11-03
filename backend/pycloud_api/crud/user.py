@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from typing import Optional
+
 from fastapi import Depends, HTTPException
 from fastapi.security import SecurityScopes
 from jose.exceptions import JWTError
@@ -12,9 +14,31 @@ from pycloud_api.models.schemas.user import UserInUpdate
 from pycloud_api.settings import Config
 from pydantic import EmailStr
 from pydantic import ValidationError
-from starlette.status import HTTP_401_UNAUTHORIZED
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_422_UNPROCESSABLE_ENTITY
 
 from .tenant import get_tenant_by_id, get_tenant_by_domain
+
+
+async def check_free_username_and_email(
+    username: Optional[str] = None, email: Optional[EmailStr] = None
+):
+    if username:
+        user_by_username = await get_user(username)
+
+        if user_by_username:
+            raise HTTPException(
+                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="User with this username already exists",
+            )
+
+    if email:
+        user_by_email = await get_user_by_email(email)
+
+        if user_by_email:
+            raise HTTPException(
+                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="User with this email already exists",
+            )
 
 
 async def get_user_info(payload: dict = Depends(requires_auth)) -> UserBase:
