@@ -1,15 +1,10 @@
 # -*- coding: utf-8 -*-
-from fastapi import APIRouter, Path, Body, Security
-from pydantic import Json
-from starlette.requests import Request
-from starlette.status import HTTP_201_CREATED
 from typing import Optional
 
-from pycloud_api.crud.helpers import (
-    check_free_tenant_name_and_domain,
-    build_list_response,
-)
+from fastapi import APIRouter, Path, Body, Security
+from pycloud_api.crud.helpers import build_list_response
 from pycloud_api.crud.tenant import (
+    check_free_tenant_name_and_domain,
     create_tenant,
     update_tenant,
     get_tenant_by_id,
@@ -19,6 +14,9 @@ from pycloud_api.crud.user import get_current_user
 from pycloud_api.models.schemas.response import ResponseList
 from pycloud_api.models.schemas.tenant import Tenant, TenantInUpdate, TenantInResponse
 from pycloud_api.models.schemas.user import UserInDB
+from pydantic import Json
+from starlette.requests import Request
+from starlette.status import HTTP_201_CREATED
 
 router = APIRouter()
 
@@ -55,9 +53,11 @@ async def list_tenants(
     limit: int = 10,
     page: Optional[int] = 1,
     q: Optional[Json] = None,
+    sort: str = None,
+    fetch_references: bool = False,
     current_user: UserInDB = Security(get_current_user, scopes=["read:tenant"]),
 ):
-    result, total, has_next = await get_tenants(q, page, limit)
+    result, total, has_next = await get_tenants(q, page, limit, sort, fetch_references)
     return await build_list_response(
         result, limit, page, total, str(request.url), has_next
     )

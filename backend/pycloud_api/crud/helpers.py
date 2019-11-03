@@ -1,27 +1,51 @@
 # -*- coding: utf-8 -*-
+import contextlib
 import re
 
-from pydantic import EmailStr, UrlStr, BaseModel
-from starlette.exceptions import HTTPException
-from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
-from typing import Optional, List, Dict
+from bson.errors import InvalidId
+from bson.objectid import ObjectId
+from dateutil import parser as date_parser
+from pydantic import UrlStr, BaseModel
+from typing import Optional, List, Tuple, Any
 from umongo import instance
-
+from pymongo import ASCENDING, DESCENDING
 from pycloud_api.models.schemas.response import (
     ResponseList,
     ResponseListLink,
     ResponseListLinks,
     ResponseListMeta,
 )
-from .tenant import get_tenant_by_name, get_tenant_by_domain
-from .user import get_user, get_user_by_email
+
+
+async def _parse_query_values(query: dict = None) -> dict:
+    query = query or {}
+
+    async def _parse_values(key, val):
+        if isinstance(val, dict):
+            await _parse_query_values(val)
+
+        with contextlib.suppress(Exception):
+            val = date_parser.parse(val)
+
+        with contextlib.suppress(InvalidId):
+            val = ObjectId(str(val))
+
+        query[key] = val
+
+    _ = [await _parse_values(k, v) for k, v in query.items()]
+
+    return query
 
 
 async def get_document(
-    model: instance, model_schema, query: dict = None
+    model: instance, model_schema, query: dict = None, fetch_references: bool = False
 ) -> Optional[BaseModel]:
-    query = query or {}
+    query = await _parse_query_values(query)
     document = await model.find_one(query)
+
+    if fetch_references:
+        loaded_doc = await document.fetch_references()
+        return await loaded_doc.dump()
 
     if document:
         return model_schema(**document.dump())
@@ -29,48 +53,44 @@ async def get_document(
     return None
 
 
-async def check_free_username_and_email(
-    username: Optional[str] = None, email: Optional[EmailStr] = None
-):
-    if username:
-        user_by_username = await get_user(username)
+async def get_document_list(
+    model: instance,
+    model_schema,
+    query: Optional[dict] = None,
+    page: Optional[int] = 1,
+    limit: int = 10,
+    sort: str = None,
+    fetch_references: bool = False,
+) -> Tuple[List[Any], int, bool]:
+    query = await _parse_query_values(query)
+    total = await model.count_documents(query)
+    cursor = model.find(query, limit=limit, skip=(page - 1) * limit)
+    has_next = total > (limit * page)
 
-        if user_by_username:
-            raise HTTPException(
-                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="User with this username already exists",
-            )
+    if sort:
+        sort_order = {"+": ASCENDING, "-": DESCENDING}.get(sort[0], ASCENDING)
+        sort_by = "{}".format(sort[1:] if sort[0] in ["+", "-"] else sort)
 
-    if email:
-        user_by_email = await get_user_by_email(email)
+        cursor = cursor.sort([(sort_by, sort_order)])
 
-        if user_by_email:
-            raise HTTPException(
-                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="User with this email already exists",
-            )
+    if fetch_references:
 
+        async def _fetcher(document):
+            loaded_doc = await document.fetch_references()
+            dumped_doc = await loaded_doc.dump()
+            return dumped_doc
 
-async def check_free_tenant_name_and_domain(
-    name: Optional[str] = None, domain: Optional[str] = None
-):
-    if name:
-        tenant_by_name = await get_tenant_by_name(name)
+        return (
+            [await _fetcher(document) for document in (await cursor.to_list(limit))],
+            total,
+            has_next,
+        )
 
-        if tenant_by_name:
-            raise HTTPException(
-                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="A tenant with this name already exists",
-            )
-
-    if domain:
-        tenant_by_domain = await get_tenant_by_domain(domain)
-
-        if tenant_by_domain:
-            raise HTTPException(
-                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="A tenant with this domain already exists",
-            )
+    return (
+        [model_schema(**document.dump()) for document in (await cursor.to_list(limit))],
+        total,
+        has_next,
+    )
 
 
 async def build_list_response(
