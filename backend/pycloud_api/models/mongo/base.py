@@ -2,7 +2,11 @@
 import datetime
 
 from bson.objectid import ObjectId
+from loguru import logger
+from pycloud_api.common.structures import Struct
 from umongo import Instance, Document, fields, MotorAsyncIOInstance
+from umongo.data_objects import List as UMongoList
+from umongo.frameworks.motor_asyncio import MotorAsyncIOReference
 
 from pycloud_api.db.database import client, get_mongo_db
 from pycloud_api.settings import Config
@@ -19,6 +23,11 @@ class Base(Document):
     )
     created_at = fields.DateTimeField(allow_none=True)
     updated_at = fields.DateTimeField(default=datetime.datetime.now, allow_none=True)
+
+    class Meta:
+        allow_inheritance = True
+        abstract = True
+        indexes = ("#id", "created_at", "updated_at")
 
     @staticmethod
     def _super(tmpl, self):
@@ -44,10 +53,33 @@ class Base(Document):
             if getattr(self, k):
                 self[k] = v
 
-    class Meta:
-        allow_inheritance = True
-        abstract = True
-        indexes = ("#id", "created_at", "updated_at")
+    async def fetch_references(self) -> Struct:
+        logger.debug(f"Fetching References for {self.__class__.__name__}...")
+        loaded_doc = Struct(**self.dump())
+
+        async def _fetch_reference(_field: MotorAsyncIOReference):
+            _fetched_field = await _field.fetch()
+            return Struct(**_fetched_field.dump())
+
+            # TODO find a way to speed up this piece of code to allow for a fully loaded document
+            # _fetched_field = await _fetched_field.fetch_references()
+            # return _fetched_field
+
+        for field in self._data.items():
+            if isinstance(field[1], MotorAsyncIOReference):
+                fetched_field = await _fetch_reference(field[1])
+                setattr(loaded_doc, field[0], fetched_field)
+
+            elif isinstance(field[1], UMongoList):
+                list_field = [
+                    await _fetch_reference(item)
+                    for item in field[1]
+                    if isinstance(item, MotorAsyncIOReference)
+                ]
+
+                setattr(loaded_doc, field[0], list_field)
+
+        return loaded_doc
 
 
 BaseModel = instance.register(Base)
