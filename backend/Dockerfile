@@ -9,4 +9,6 @@ ENV APP_MODULE=${APP_MODULE}
 COPY . /app
 WORKDIR /app
 
-RUN pip install -r requirements.txt
+RUN apt update; apt install dos2unix
+RUN find /app -type f -print0 | xargs -0 dos2unix
+RUN sh ./prestart.sh
