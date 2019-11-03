@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-
 from pycloud_api.crud.user import get_current_user
 from pycloud_api.models.schemas.user import UserInDB
 from pycloud_api.settings import Config
 from fastapi import APIRouter, Security
-from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 from six.moves.urllib.parse import urlencode
 from starlette.requests import Request
@@ -78,7 +77,7 @@ async def get_open_api_endpoint(
 
 
 @router.get("/docs", include_in_schema=False)
-async def get_documentation(
+async def get_swagger(
     request: Request,
     current_user: UserInDB = Security(get_current_user, scopes=["read:docs"]),
 ):
@@ -87,4 +86,14 @@ async def get_documentation(
         title=request.app.title + " - Swagger UI",
         oauth2_redirect_url="/api/docs/oauth2-redirect",
         init_oauth=None,
+    )
+
+
+@router.get("/redoc", include_in_schema=False)
+async def get_redoc(
+    request: Request,
+    current_user: UserInDB = Security(get_current_user, scopes=["read:docs"]),
+):
+    return get_redoc_html(
+        openapi_url="/api/openapi.json", title=request.app.title + " - ReDoc"
     )
