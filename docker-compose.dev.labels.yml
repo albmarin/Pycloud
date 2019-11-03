@@ -2,20 +2,20 @@ version: '3.3'
 services:
   traefik:
     labels:
-      - traefik.frontend.rule=Host:${DOMAIN}
+      - traefik.http.routers.proxy.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.proxy.entrypoints=web
       - traefik.enable=true
-      - traefik.port=80
 
   backend:
     labels:
-      - traefik.frontend.rule=PathPrefix:/api
+      - traefik.http.routers.backend.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)
+      - traefik.http.routers.backend.entrypoints=web
       - traefik.enable=true
-      - traefik.port=80
       - traefik.tags=${TRAEFIK_TAG}
 
   frontend:
     labels:
-      - traefik.frontend.rule=PathPrefix:/
+      - traefik.http.routers.frontend.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)
+      - traefik.http.routers.frontend.entrypoints=web
       - traefik.enable=true
-      - traefik.port=80
       - traefik.tags=${TRAEFIK_TAG}

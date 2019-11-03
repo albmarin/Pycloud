@@ -1,29 +1,20 @@
 version: '3.3'
 services:
-  consul-leader:
-    command: agent -server -client=0.0.0.0 -bootstrap -ui
-
-  consul-replica:
-    command: agent -server -client=0.0.0.0 -retry-join="consul-leader"
-
   traefik:
-    command: >
-      --docker
-      --docker.swarmmode
-      --docker.watch
-      --docker.exposedbydefault=false
-      --constraints=tag==${TRAEFIK_PUBLIC_NETWORK}
-      --entrypoints='Name:http Address::80'
-      --entrypoints='Name:https Address::443 TLS'
-      --consul
-      --consul.endpoint="consul-leader:8500"
-      --acme
-      --acme.email=${EMAIL?Variable EMAIL not set}
-      --acme.storage="traefik/acme/account"
-      --acme.entryPoint=https
-      --acme.httpChallenge.entryPoint=http
-      --acme.onhostrule=true
-      --acme.acmelogging=true
-      --logLevel=INFO
-      --accessLog
-      --api
+    command:
+      - --providers.docker
+      - --providers.docker.swarmmode
+      - --providers.docker.watch
+      - --providers.docker.exposedbydefault=false
+#      - --providers.docker.constraints="Label(`tag`, `${TRAEFIK_PUBLIC_NETWORK}`)"
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.default.acme.httpchallenge=true
+      - --certificatesresolvers.default.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.default.acme.email=${EMAIL?Variable EMAIL not set}
+      - --certificatesresolvers.default.acme.storage=/acme.json
+#      - --certificatesresolvers.default.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+      - --log.level=INFO
+      - --accessLog
+      - --api
+      - --api.dashboard

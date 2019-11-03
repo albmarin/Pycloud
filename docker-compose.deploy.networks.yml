@@ -1,25 +1,19 @@
 version: '3.3'
 services:
-  consul-leader:
-    networks:
-      - ${TRAEFIK_PUBLIC_NETWORK}
-      - default
-
-  consul-replica:
-    networks:
-      - ${TRAEFIK_PUBLIC_NETWORK}
-      - default
-
   traefik:
     networks:
       - ${TRAEFIK_PUBLIC_NETWORK}
       - default
-    depends_on:
-      - consul-leader
 
-volumes:
-  consul-data-leader:
-  consul-data-replica:
+  backend:
+    networks:
+      - ${TRAEFIK_PUBLIC_NETWORK}
+      - default
+
+  frontend:
+    networks:
+      - ${TRAEFIK_PUBLIC_NETWORK}
+      - default
 
 networks:
   traefik-public:

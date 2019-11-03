@@ -1,12 +1,5 @@
 version: '3.3'
 services:
-  consul-replica:
-    deploy:
-      replicas: ${CONSUL_REPLICAS:-3}
-      placement:
-        preferences:
-          - spread: node.id
-
   traefik:
     deploy:
       replicas: ${TRAEFIK_REPLICAS:-3}
@@ -15,3 +8,10 @@ services:
           - node.role == manager
         preferences:
           - spread: node.id
+  backend:
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-3}
+
+  frontend:
+    deploy:
+      replicas: ${FRONTEND_REPLICAS:-3}
