@@ -1,31 +1,25 @@
 # -*- coding: utf-8 -*-
-import httpx
 from fastapi import Depends, HTTPException
 from fastapi.security import SecurityScopes
 from jose.exceptions import JWTError
+from pycloud_api.core.auth import requires_auth
+from pycloud_api.core.errors import AuthError
+from pycloud_api.models.mongo import User
+from pycloud_api.models.schemas.tenant import TenantInDB
+from pycloud_api.models.schemas.token import TokenData
+from pycloud_api.models.schemas.user import UserBase, UserInDB
+from pycloud_api.models.schemas.user import UserInUpdate
+from pycloud_api.settings import Config
 from pydantic import EmailStr
 from pydantic import ValidationError
 from starlette.status import HTTP_401_UNAUTHORIZED
 
-from pycloud_api.core.auth import requires_auth, get_token_auth_header
-from pycloud_api.core.errors import AuthError
-from pycloud_api.models.mongo import User
-from pycloud_api.models.schemas.token import Token, TokenData
-from pycloud_api.models.schemas.user import UserBase, UserInDB
-from pycloud_api.models.schemas.user import UserInUpdate
-from pycloud_api.settings import Config
-from .tenant import get_tenant_by_domain
+from .tenant import get_tenant_by_id, get_tenant_by_domain
 
 
-async def get_user_info(token: Token = Depends(get_token_auth_header)) -> UserBase:
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            f"https://{Config.AUTH0_DOMAIN}/userinfo",
-            headers={"Authorization": f"Bearer {token.access_token}"},
-        )
-
-        user_info = resp.json()
-        return UserBase(username=user_info["email"], **user_info)
+async def get_user_info(payload: dict = Depends(requires_auth)) -> UserBase:
+    user_info = payload[f"{Config.AUTH0_API_AUDIENCE}/user_info"]
+    return UserBase(username=user_info["email"], **user_info)
 
 
 async def get_current_user(
@@ -69,6 +63,12 @@ async def get_current_user(
     return user
 
 
+async def get_current_user_tenant(
+    current_user: UserInDB = Depends(get_current_user)
+) -> TenantInDB:
+    return await get_tenant_by_id(current_user.tenant)
+
+
 async def get_user(username: str) -> UserInDB:
     document = await User.find_one({"username": username})
 
@@ -109,7 +109,7 @@ async def update_user(username: str, user: UserInUpdate) -> UserInDB:
     db_user.username = user.username or db_user.username
     db_user.email = user.email or db_user.email
     db_user.bio = user.bio or db_user.bio
-    db_user.image = user.image or db_user.image
+    db_user.picture = user.picture or db_user.picture
 
     document = User.objects(username=username).first()
     document.dict_update(**user.dict())

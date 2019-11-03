@@ -3,55 +3,61 @@
 from typing import List, Tuple, Optional
 
 from bson.objectid import ObjectId
-from loguru import logger
-
+from fastapi import HTTPException
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from pycloud_api.models.mongo.tenant import Tenant
 from pycloud_api.models.schemas.tenant import TenantBase, TenantInDB, TenantInUpdate
+from .helpers import get_document, get_document_list
 
 
-async def get_tenant(query: dict = None) -> TenantInDB:
-    query = query or {}
-    document = await Tenant.find_one(query)
+async def check_free_tenant_name_and_domain(
+    name: Optional[str] = None, domain: Optional[str] = None
+):
+    if name:
+        tenant_by_name = await get_tenant_by_name(name)
 
-    if document:
-        return TenantInDB(**document.dump())
+        if tenant_by_name:
+            raise HTTPException(
+                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="A tenant with this name already exists",
+            )
+
+    if domain:
+        tenant_by_domain = await get_tenant_by_domain(domain)
+
+        if tenant_by_domain:
+            raise HTTPException(
+                status_code=HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="A tenant with this domain already exists",
+            )
+
+
+async def get_tenant(query: dict = None) -> Optional[TenantInDB]:
+    return await get_document(Tenant, TenantInDB, query)
 
 
 async def get_tenants(
-    query: Optional[dict] = None, page: Optional[int] = 1, limit: int = 10
+    query: Optional[dict] = None,
+    page: Optional[int] = 1,
+    limit: int = 10,
+    sort: str = None,
+    fetch_references: bool = False,
 ) -> Tuple[List[TenantInDB], int, bool]:
-    query = query or {}
-
-    total = await Tenant.count_documents(query)
-    cursor = Tenant.find(query, limit=limit, skip=(page - 1) * limit)
-    has_next = total > (limit * page)
-
-    return (
-        [TenantInDB(**document.dump()) for document in (await cursor.to_list(limit))],
-        total,
-        has_next,
+    return await get_document_list(
+        Tenant, TenantInDB, query, page, limit, sort, fetch_references
     )
 
 
-async def get_tenant_by_name(name: str) -> TenantInDB:
-    document = await Tenant.find_one({"name": name})
-
-    if document:
-        return TenantInDB(**document.dump())
+async def get_tenant_by_name(name: str) -> Optional[TenantInDB]:
+    return await get_document(Tenant, TenantInDB, query={"name": name})
 
 
-async def get_tenant_by_id(obj_id: str) -> TenantInDB:
-    document = await Tenant.find_one({"id": ObjectId(obj_id)})
-
-    if document:
-        return TenantInDB(**document.dump())
+async def get_tenant_by_id(obj_id: str) -> Optional[TenantInDB]:
+    return await get_document(Tenant, TenantInDB, query={"id": ObjectId(obj_id)})
 
 
-async def get_tenant_by_domain(domain: str) -> TenantInDB:
-    document = await Tenant.find_one({"domain": domain})
-
-    if document:
-        return TenantInDB(**document.dump())
+async def get_tenant_by_domain(domain: str) -> Optional[TenantInDB]:
+    return await get_document(Tenant, TenantInDB, query={"domain": domain})
 
 
 async def create_tenant(tenant: TenantBase) -> TenantInDB:
@@ -60,10 +66,9 @@ async def create_tenant(tenant: TenantBase) -> TenantInDB:
         return tenant_by_domain
 
     db_tenant = TenantInDB(**tenant.dict())
-
     document = Tenant(**db_tenant.dict())
-    await document.commit()
 
+    await document.commit()
     return TenantInDB(**document.dump())
 
 
