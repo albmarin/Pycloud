@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 from fastapi import APIRouter, Body, Security
-
-from pycloud_api.crud.helpers import check_free_username_and_email
 from pycloud_api.crud.tenant import get_tenant_by_id
-from pycloud_api.crud.user import get_current_user
+from pycloud_api.crud.user import get_current_user, check_free_username_and_email
 from pycloud_api.models.schemas.tenant import Tenant, TenantInResponse
 from pycloud_api.models.schemas.user import User, UserInDB, UserInResponse, UserInUpdate
 
