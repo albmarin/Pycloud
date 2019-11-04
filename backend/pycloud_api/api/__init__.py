@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from fastapi import APIRouter
 
-from .endpoints import tenant, user, docs
+from .endpoints import tenant, user, docs, pypi
 
 router = APIRouter()
 
@@ -11,3 +11,6 @@ router.include_router(user.router)
 
 # Documentation Routes
 router.include_router(docs.openapi.router)
+
+# PyPi Routes
+router.include_router(pypi.simple.router)

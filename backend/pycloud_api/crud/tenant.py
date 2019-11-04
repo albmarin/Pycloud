@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from typing import List, Tuple, Optional
 
 from bson.objectid import ObjectId
