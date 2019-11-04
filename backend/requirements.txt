@@ -1,11 +1,12 @@
--e git+git://github.com/lepture/authlib.git#egg=authlib
 bcrypt==3.1.6
 boto3 == 1.9.188
 cffi==1.12.2
 Click==7.0
 dnspython==1.16.0
 email-validator==1.0.3
+Faker == 1.0.7
 fastapi[all]==0.41.0
+git+git://github.com/lepture/authlib.git#egg=authlib
 gunicorn==19.9.0
 h11==0.8.1
 httptools==0.0.13
