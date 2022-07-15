@@ -1,6 +1,6 @@
 alabaster==0.7.12
 black==19.3b0
-codecov==2.0.15
+codecov==2.0.16
 coverage==4.5.1
 flake8==3.5.0
 pre-commit==1.18.0
