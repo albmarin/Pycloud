@@ -12,7 +12,7 @@ httptools==0.0.13
 httpx
 idna==2.8
 loguru
-Mako==1.1.0
+Mako==1.2.2
 MarkupSafe==1.1.1
 npyi
 passlib==1.7.1
